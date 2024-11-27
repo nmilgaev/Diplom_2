@@ -1,17 +1,14 @@
-import requests
 import allure
-from data import ENDPOINTS, EXISTING_USER
+from data import EXISTING_USER
+from helpers.api_requests import get_user_orders
 
+@allure.feature("Заказы пользователя")
+@allure.story("Получение заказов пользователя через авторизацию")
 class TestUserOrders:
 
-    @staticmethod
-    def login(user_data):
-        response = requests.post(ENDPOINTS["login"], json=user_data)
-        return response
-
-    @allure.step("Авторизация пользователя")
-    def test_get_orders_authorized(self):
-        auth_response = self.login(EXISTING_USER)
+    @allure.title("Тест авторизации пользователя")
+    def test_get_orders_authorized(self, login_user):
+        auth_response = login_user(EXISTING_USER)
         assert auth_response.status_code == 200, f"Ошибка при авторизации: {auth_response.text}"
 
         auth_token = auth_response.json().get("accessToken")
@@ -20,8 +17,7 @@ class TestUserOrders:
         token = auth_token.split(' ')[1] if ' ' in auth_token else auth_token
         assert token, "Токен имеет неверный формат или отсутствует"
 
-        headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(ENDPOINTS["orders"], headers=headers)
+        response = get_user_orders(token)
         assert response.status_code == 200, f"Ошибка при получении заказов: {response.text}"
 
         orders = response.json().get("orders")
@@ -35,9 +31,8 @@ class TestUserOrders:
             assert all(key in order for key in
                        ["ingredients", "status", "number", "createdAt", "updatedAt"]), "Отсутствуют поля заказа"
 
-    @allure.step("Попытка получения заказов без авторизации")
+    @allure.title("Тест получения заказов без авторизации")
     def test_get_orders_unauthorized(self):
-        response = requests.get(ENDPOINTS["orders"])
+        response = get_user_orders()
         assert response.status_code == 401, f"Ожидался статус 401 (неавторизован), получен {response.status_code}"
-        assert response.json().get(
-            "message") == "You should be authorised", f"Неожиданное сообщение: {response.json().get('message')}"
+        assert response.json().get("message") == "You should be authorised", f"Неожиданное сообщение: {response.json().get('message')}"

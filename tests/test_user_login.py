@@ -1,15 +1,15 @@
-import requests
 import allure
-from data import ENDPOINTS, EXISTING_USER, INVALID_USER
+from helpers.api_requests import login_user
+from data import EXISTING_USER, INVALID_USER
 
-
+@allure.feature('Авторизация пользователя')
+@allure.story('Тестирование различных сценариев авторизации')
 class TestUserLogin:
 
-    @allure.feature('Авторизация пользователя')
-    @allure.story('Успешный вход с корректными данными')
-    def test_login_successful(self):
+    @allure.title('Тест успешного входа с корректными данными')
+    def test_login_successful(self, login_user):
         with allure.step('Отправляем запрос на вход с существующими данными'):
-            response = requests.post(ENDPOINTS["login"], json=EXISTING_USER)
+            response = login_user(EXISTING_USER)
 
         with allure.step('Проверяем успешный ответ'):
             assert response.status_code == 200, \
@@ -24,11 +24,10 @@ class TestUserLogin:
             assert "user" in response_json, \
                 f"В ответе отсутствуют данные пользователя. Ответ: {response_json}"
 
-    @allure.feature('Авторизация пользователя')
-    @allure.story('Неуспешный вход с неверными данными')
-    def test_login_invalid_credentials(self):
+    @allure.title('Тест неуспешного входа с неверными данными')
+    def test_login_invalid_credentials(self, login_user):
         with allure.step('Отправляем запрос на вход с неверными данными'):
-            response = requests.post(ENDPOINTS["login"], json=INVALID_USER)
+            response = login_user(INVALID_USER)
 
         with allure.step('Проверяем ошибку авторизации'):
             assert response.status_code == 401, \
